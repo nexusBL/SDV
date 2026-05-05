@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QCar 2 Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="dashboard">
+        <header class="glass-panel">
+            <div class="brand">
+                <h1>QCar 2 <span>Telemetry</span></h1>
+            </div>
+            <div class="telemetry-stats">
+                <div class="stat-box">
+                    <span class="label">Battery</span>
+                    <span class="value" id="battery-val">100.0%</span>
+                </div>
+                <div class="stat-box">
+                    <span class="label">Steering Angle</span>
+                    <span class="value" id="steering-val">0.0°</span>
+                </div>
+                <div class="stat-box">
+                    <span class="label">Speed</span>
+                    <span class="value" id="speed-val">0.0 m/s</span>
+                </div>
+            </div>
+        </header>
+
+        <main class="grid-container">
+            <section class="camera-grid glass-panel">
+                <h2>CSI Cameras</h2>
+                <div class="grid-4">
+                    <div class="cam-feed front-cam">
+                        <img src="/video/csi/2" alt="Front CSI" class="video-stream">
+                        <span class="cam-label">Front</span>
+                    </div>
+                    <div class="cam-feed left-cam">
+                        <img src="/video/csi/3" alt="Left CSI" class="video-stream">
+                        <span class="cam-label">Left</span>
+                    </div>
+                    <div class="cam-feed right-cam">
+                        <img src="/video/csi/0" alt="Right CSI" class="video-stream">
+                        <span class="cam-label">Right</span>
+                    </div>
+                    <div class="cam-feed back-cam">
+                        <img src="/video/csi/1" alt="Back CSI" class="video-stream">
+                        <span class="cam-label">Back</span>
+                    </div>
+                </div>
+            </section>
+
+            <aside class="perception-panel glass-panel">
+                <h2>Perception</h2>
+                <div class="cam-feed realsense">
+                    <img src="/video/realsense" alt="RealSense" class="video-stream">
+                    <span class="cam-label">RealSense</span>
+                </div>
+                <div class="cam-feed lanedetect">
+                    <img src="/video/lane" alt="Lane Detection" class="video-stream">
+                    <span class="cam-label">Lane Detection</span>
+                </div>
+                
+                <h2>LiDAR 3D</h2>
+                <div class="lidar-view">
+                    <canvas id="lidar-canvas"></canvas>
+                </div>
+            </aside>
+        </main>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
+

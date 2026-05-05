@@ -1,0 +1,129 @@
+# ═══════════════════════════════════════════════════════════
+#  SDV Perception Pipeline Configuration
+#  QCar2 | Jetson AGX Orin | GPU Accelerated
+# ═══════════════════════════════════════════════════════════
+
+# ── Camera Settings ──
+camera:
+  width: 1280
+  height: 720
+  fps: 30
+
+# ── YOLOv8 Object Detection ──
+yolo:
+  model_path: "/home/nvidia/Desktop/SDV_workspace/yolov8n.pt"
+  confidence: 0.45
+  iou_threshold: 0.45
+  image_size: 640
+  device: "cuda"
+  warmup_frames: 3
+  # COCO class IDs relevant to autonomous driving
+  critical_classes:
+    0:  "person"
+    1:  "bicycle"
+    2:  "car"
+    3:  "motorcycle"
+    5:  "bus"
+    7:  "truck"
+    9:  "traffic light"
+    11: "stop sign"
+    12: "parking meter"
+
+# ── Lane Detection ──
+lane:
+  roi_top_ratio: 0.55          # ROI starts at 55% from top of image
+  blur_kernel: [5, 5]
+  canny_low: 50
+  canny_high: 150
+  hough_threshold: 50
+  hough_min_line_length: 200
+  hough_max_line_gap: 15
+  # Bird's-eye perspective transform (ratios of image width/height)
+  perspective:
+    src_bottom_left:  [0.20, 0.95]
+    src_top_left:     [0.45, 0.60]
+    src_top_right:    [0.55, 0.60]
+    src_bottom_right: [0.80, 0.95]
+    dst_left:  0.25
+    dst_right: 0.75
+  # Sliding window params
+  sliding_window:
+    n_windows: 9
+    margin: 80
+    min_pixels: 40
+  # Color thresholds (HLS color space)
+  white_low:  [0,   200, 0]
+  white_high: [180, 255, 255]
+  yellow_low:  [15, 80,  100]
+  yellow_high: [35, 255, 255]
+  # Smoothing history
+  fit_history_length: 8
+  center_history_length: 10
+
+# ── Depth Fusion ──
+depth:
+  min_distance: 0.1            # meters — ignore closer (noise)
+  max_distance: 10.0           # meters — ignore farther
+  sample_ratio: 0.3            # sample center 30% of bbox for depth
+  scale_factor: 0.001          # RealSense 16UC1 to meters
+
+# ── LiDAR Processing ──
+lidar:
+  critical_distance: 0.5       # meters — EMERGENCY STOP zone
+  warning_distance: 1.5        # meters — SLOW DOWN zone
+  front_arc_degrees: 30        # degrees each side of front center
+  max_range: 10.0              # meters
+  min_range: 0.05              # meters
+
+# ── HUD / Visualization ──
+hud:
+  top_bar_height: 38
+  font_scale_title: 0.7
+  font_scale_info: 0.6
+  font_scale_panel: 0.55
+  threat_panel_width: 280
+  threat_panel_height: 130
+  lane_panel_width: 220
+  lane_panel_height: 100
+  steering_bar_half_width: 100
+  background_color: [15, 15, 15]
+
+# ── Performance ──
+performance:
+  max_fps: 30
+  fps_update_interval: 30      # update FPS counter every N frames
+
+# ── ROS2 Topics ──
+topics:
+  # Subscriptions
+  rgb_image_yolo: "/camera/color_image"    # RealSense for YOLO+Depth
+  rgb_image_lane: "/sdv/camera/front"      # CSI Front for Lanes
+  depth_image: "/camera/depth_image"
+  lidar_scan: "/scan"
+  # Publications
+  annotated_image: "/sdv/perception/annotated"
+  detections_json: "/sdv/perception/detections"
+  lane_data: "/sdv/perception/lane"
+  threat_level: "/sdv/perception/threat"
+
+# ── Control System ──
+pid:
+  kp: 0.8
+  ki: 0.05
+  kd: 0.1
+  max_integral: 0.3
+  dt: 0.033
+
+speed:
+  base_throttle: 0.10
+  warning_throttle_multiplier: 0.5
+  max_throttle: 0.15
+  min_throttle: -0.05       # Minor braking
+
+acc:
+  desired_distance: 1.0     # meters
+
+hardware:
+  loop_rate_hz: 100
+  steering_max: 0.3         # safe clamp limit (rad)
+  steering_threshold: 0.05  # activation for indicator lights

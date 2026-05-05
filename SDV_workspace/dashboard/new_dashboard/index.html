@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QCar 2 SDV Dashboard</title>
+    <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="App.css">
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background: #08080a; color: #e0e0e0;
+            font-family: 'Inter', -apple-system, system-ui, 'Segoe UI', sans-serif;
+        }
+        #root { min-height: 100vh; }
+        .dash-root { display: flex; flex-direction: column; min-height: 100vh; }
+
+        /* --- Top Bar --- */
+        .top-bar {
+            display: flex; align-items: center; justify-content: center;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #0d0d12 0%, #131320 100%);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            position: relative;
+        }
+        .top-bar-left {
+            position: absolute; left: 24px;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .ntt-logo {
+            font-size: 20px; font-weight: 900; letter-spacing: 1px;
+            background: linear-gradient(135deg, #0072c6, #0098db);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .ntt-data {
+            font-size: 13px; font-weight: 700; color: #0098db;
+            letter-spacing: 2px; text-transform: uppercase;
+        }
+        .top-bar-center {
+            display: flex; align-items: center; gap: 12px;
+            font-size: 18px; font-weight: 700; letter-spacing: 0.5px;
+        }
+        .top-bar-right {
+            position: absolute; right: 24px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .top-bar-status {
+            display: flex; align-items: center; gap: 8px;
+            padding: 6px 16px; border-radius: 20px;
+            background: rgba(255,255,255,0.04);
+            font-size: 13px; font-weight: 500;
+        }
+        .status-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            transition: background 0.3s;
+        }
+        .status-dot.on { background: #22c55e; box-shadow: 0 0 8px #22c55e88; }
+        .status-dot.off { background: #ef4444; box-shadow: 0 0 8px #ef444488; animation: pulse-red 1.5s infinite; }
+        @keyframes pulse-red { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        /* --- Main Grid --- */
+        .dash-main { flex: 1; padding: 16px; overflow-y: auto; }
+        .dash-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 14px;
+            height: calc(100vh - 70px);
+        }
+
+        /* --- Card --- */
+        .card {
+            background: linear-gradient(160deg, rgba(20,20,30,0.95), rgba(12,12,18,0.98));
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 14px;
+            display: flex; flex-direction: column;
+            overflow: hidden;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .card:hover {
+            border-color: rgba(99,102,241,0.3);
+            box-shadow: 0 4px 30px rgba(99,102,241,0.08);
+        }
+        .card-hd {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        .card-hd h3 {
+            font-size: 14px; font-weight: 600; color: #f0f0f0;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .card-hd h3 .dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: #22c55e; display: inline-block;
+        }
+        .card-hd .sub { font-size: 11px; color: #666; margin-top: 2px; }
+        .card-bd { flex: 1; position: relative; overflow: hidden; }
+        .card-acts { display: flex; align-items: center; gap: 6px; }
+        .expand-btn {
+            background: rgba(255,255,255,0.06); border: none; color: #aaa;
+            width: 30px; height: 30px; border-radius: 8px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px; transition: all 0.2s;
+        }
+        .expand-btn:hover { background: rgba(99,102,241,0.3); color: #fff; }
+
+        /* --- Feed --- */
+        .feed-img {
+            width: 100%; height: 100%; object-fit: cover;
+            display: block; background: #000;
+        }
+        .feed-badge {
+            position: absolute; top: 10px; left: 10px;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+            padding: 4px 10px; border-radius: 6px;
+            font-size: 11px; font-weight: 600; color: #a5b4fc;
+            border: 1px solid rgba(99,102,241,0.2);
+        }
+        .feed-rec {
+            position: absolute; top: 12px; right: 12px;
+            width: 8px; height: 8px; border-radius: 50%;
+            background: #ef4444; animation: pulse-red 1s infinite;
+        }
+
+        /* --- RealSense Dropdown --- */
+        .rs-dropdown { position: relative; }
+        .rs-trigger {
+            display: flex; align-items: center; gap: 6px;
+            background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+            color: #ccc; padding: 5px 12px; border-radius: 8px;
+            font-size: 12px; font-weight: 500; cursor: pointer;
+            transition: all 0.2s;
+        }
+        .rs-trigger:hover { background: rgba(99,102,241,0.2); border-color: rgba(99,102,241,0.3); }
+        .rs-trigger .arrow { font-size: 10px; color: #888; transition: transform 0.2s; }
+        .rs-trigger .arrow.open { transform: rotate(180deg); }
+        .rs-menu {
+            position: absolute; top: calc(100% + 4px); right: 0; z-index: 100;
+            background: #1a1a2e; border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px; overflow: hidden; min-width: 150px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+            animation: fadeIn 0.15s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+        .rs-item {
+            display: block; width: 100%;
+            background: none; border: none; color: #bbb;
+            padding: 10px 16px; font-size: 12px; cursor: pointer;
+            text-align: left; transition: all 0.15s;
+        }
+        .rs-item:hover { background: rgba(99,102,241,0.15); color: #fff; }
+        .rs-item.active { background: rgba(99,102,241,0.2); color: #a5b4fc; font-weight: 600; }
+
+        /* --- LiDAR Panel --- */
+        .lidar-wrap {
+            width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            background: radial-gradient(circle at center, rgba(10,30,20,0.5), transparent 70%);
+            position: relative;
+        }
+        .lidar-svg { width: 90%; height: 90%; }
+        .lidar-svg .ring { fill: none; stroke: rgba(255,255,255,0.08); stroke-width: 0.5; }
+        .lidar-svg .axis { stroke: rgba(255,255,255,0.04); stroke-width: 0.3; }
+        .lidar-svg .pt { fill: #22c55e; filter: drop-shadow(0 0 2px #22c55e); }
+        .lidar-svg .closest-pt { fill: #ef4444; filter: drop-shadow(0 0 4px #ef4444); }
+        .lidar-svg .car { fill: #a5b4fc; }
+        .lidar-svg .dist-label { fill: #555; font-size: 5px; font-family: sans-serif; }
+        .lidar-svg .closest-label {
+            fill: #ef4444; font-size: 5.5px; font-weight: bold; font-family: sans-serif;
+        }
+        .lidar-svg .closest-line {
+            stroke: rgba(239,68,68,0.3); stroke-width: 0.4; stroke-dasharray: 2 2;
+        }
+        .lidar-label {
+            position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+            font-size: 10px; color: #555; letter-spacing: 2px; text-transform: uppercase;
+        }
+
+        /* --- Telemetry --- */
+        .tele-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 16px; height: 100%; align-content: center; }
+        .tele-box {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 10px; padding: 14px;
+        }
+        .tele-box .lbl { font-size: 11px; color: #777; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .tele-box .val { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .tele-box .val.green { color: #22c55e; }
+        .tele-box .val.blue { color: #6366f1; }
+        .tele-box .val.amber { color: #f59e0b; }
+        .tele-box .val.cyan { color: #06b6d4; }
+        .bar-track { width: 100%; height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; margin-top: 8px; }
+        .bar-fill { height: 100%; border-radius: 2px; transition: width 0.3s ease; }
+        .bar-fill.green { background: linear-gradient(90deg, #22c55e, #16a34a); }
+        .mode-pill {
+            display: inline-block; padding: 3px 10px; border-radius: 12px;
+            font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
+        }
+        .mode-pill.real { background: rgba(34,197,94,0.15); color: #22c55e; border: 1px solid rgba(34,197,94,0.2); }
+        .mode-pill.simulation { background: rgba(99,102,241,0.15); color: #a5b4fc; border: 1px solid rgba(99,102,241,0.2); }
+
+        /* --- CSI Grid --- */
+        .csi-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 4px; height: 100%; }
+        .csi-cell { position: relative; overflow: hidden; cursor: pointer; }
+        .csi-cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .csi-label {
+            position: absolute; bottom: 4px; left: 6px;
+            background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+            padding: 2px 8px; border-radius: 4px;
+            font-size: 10px; color: #ccc;
+        }
+
+        /* --- Fullscreen Overlay --- */
+        .fs-overlay {
+            position: fixed; inset: 0; z-index: 9999;
+            background: rgba(0,0,0,0.92); backdrop-filter: blur(10px);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .fs-inner {
+            position: relative; width: 92vw; height: 90vh;
+            background: #0a0a0f; border-radius: 16px; overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+        .fs-inner img, .fs-inner .lidar-wrap { width: 100%; height: 100%; object-fit: contain; }
+        .fs-close-btn {
+            position: absolute; top: 16px; right: 16px; z-index: 10;
+            background: rgba(255,255,255,0.1); border: none; color: #fff;
+            width: 40px; height: 40px; border-radius: 50%; cursor: pointer;
+            font-size: 20px; display: flex; align-items: center; justify-content: center;
+            transition: background 0.2s;
+        }
+        .fs-close-btn:hover { background: rgba(239,68,68,0.4); }
+        .fs-label-bar {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            padding: 12px 20px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+            font-size: 14px; font-weight: 600; color: #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback } = React;
+
+        // ---- Fullscreen Modal ----
+        function FullScreenModal({ type, src, label, lidarData, onClose }) {
+            useEffect(() => {
+                const h = e => { if (e.key === 'Escape') onClose(); };
+                window.addEventListener('keydown', h);
+                return () => window.removeEventListener('keydown', h);
+            }, [onClose]);
+
+            return (
+                <div className="fs-overlay" onClick={onClose}>
+                    <div className="fs-inner" onClick={e => e.stopPropagation()}>
+                        <button className="fs-close-btn" onClick={onClose}>&#x2715;</button>
+                        {type === 'lidar' ? (
+                            <LidarViz data={lidarData} />
+                        ) : (
+                            <img src={src} alt={label} />
+                        )}
+                        <div className="fs-label-bar">{label}</div>
+                    </div>
+                </div>
+            );
+        }
+
+        // ---- RealSense View Dropdown ----
+        const RS_VIEWS = [
+            { value: 'rgb', label: 'RGB View' },
+            { value: 'depth', label: 'Depth View' },
+            { value: 'infrared', label: 'Infrared View' },
+        ];
+
+        function RsDropdown({ view, onChange }) {
+            const [open, setOpen] = useState(false);
+            const ref = useRef(null);
+
+            useEffect(() => {
+                const h = e => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+                document.addEventListener('mousedown', h);
+                return () => document.removeEventListener('mousedown', h);
+            }, []);
+
+            const current = RS_VIEWS.find(v => v.value === view) || RS_VIEWS[0];
+
+            return (
+                <div className="rs-dropdown" ref={ref}>
+                    <button className="rs-trigger" onClick={() => setOpen(p => !p)}>
+                        &#x1F441; {current.label}
+                        <span className={`arrow ${open ? 'open' : ''}`}>&#x25BC;</span>
+                    </button>
+                    {open && (
+                        <div className="rs-menu">
+                            {RS_VIEWS.map(v => (
+                                <button
+                                    key={v.value}
+                                    className={`rs-item ${view === v.value ? 'active' : ''}`}
+                                    onClick={() => { onChange(v.value); setOpen(false); }}
+                                >
+                                    {v.label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // ---- LiDAR Visualization ----
+        function LidarViz({ data }) {
+            const maxD = 6.0;
+            const rings = [2.0, 4.0, 6.0]; // meters for each concentric circle
+
+            // Find closest point
+            let closestIdx = -1;
+            let closestDist = Infinity;
+            if (data && data.length > 0) {
+                data.forEach((d, i) => {
+                    if (d > 0.05 && d < closestDist) {
+                        closestDist = d;
+                        closestIdx = i;
+                    }
+                });
+            }
+
+            function polarToXY(dist, index, total) {
+                const a = (index * (360 / total) - 90) * (Math.PI / 180);
+                const r = Math.min(100, (dist / maxD) * 100);
+                return { x: Math.cos(a) * r, y: Math.sin(a) * r };
+            }
+
+            return (
+                <div className="lidar-wrap">
+                    <div className="lidar-label">FRONT</div>
+                    <svg viewBox="-120 -120 240 240" className="lidar-svg">
+                        {/* Concentric rings with distance labels */}
+                        {rings.map((ringDist, i) => {
+                            const r = (ringDist / maxD) * 100;
+                            return (
+                                <g key={i}>
+                                    <circle cx="0" cy="0" r={r} className="ring" />
+                                    <text x={3} y={-r + 1} className="dist-label">{ringDist}m</text>
+                                </g>
+                            );
+                        })}
+
+                        {/* Cross-hair axes */}
+                        <line x1="-100" y1="0" x2="100" y2="0" className="axis" />
+                        <line x1="0" y1="-100" x2="0" y2="100" className="axis" />
+
+                        {/* LiDAR points */}
+                        {data && data.map((d, i) => {
+                            if (d <= 0) return null;
+                            const { x, y } = polarToXY(d, i, data.length);
+                            const isClosest = i === closestIdx;
+                            return (
+                                <circle
+                                    key={i}
+                                    cx={x} cy={y}
+                                    r={isClosest ? 3 : 1.5}
+                                    className={isClosest ? 'closest-pt' : 'pt'}
+                                />
+                            );
+                        })}
+
+                        {/* Closest point annotation */}
+                        {closestIdx >= 0 && data && (() => {
+                            const { x, y } = polarToXY(closestDist, closestIdx, data.length);
+                            // Label offset
+                            const lx = x > 0 ? x + 6 : x - 6;
+                            const ly = y > 0 ? y + 8 : y - 4;
+                            const anchor = x > 0 ? 'start' : 'end';
+                            return (
+                                <g>
+                                    <line x1="0" y1="0" x2={x} y2={y} className="closest-line" />
+                                    <text x={lx} y={ly} className="closest-label" textAnchor={anchor}>
+                                        {closestDist.toFixed(2)}m
+                                    </text>
+                                </g>
+                            );
+                        })()}
+
+                        {/* Car center */}
+                        <circle cx="0" cy="0" r="4" className="car" />
+                    </svg>
+                </div>
+            );
+        }
+
+        // ---- CSI Camera mapping ----
+        // Hardware order: csi[0]=Front, csi[1]=Left, csi[2]=Right, csi[3]=Rear
+        // Corrected: swap to match actual physical position
+        const CSI_CAMS = [
+            { id: 3, label: 'Front' },   // /api/video/csi/3 = actual Front view
+            { id: 2, label: 'Left' },     // /api/video/csi/2 = actual Left view
+            { id: 1, label: 'Right' },    // /api/video/csi/1 = actual Right view
+            { id: 0, label: 'Rear' },     // /api/video/csi/0 = actual Rear view
+        ];
+
+        // ---- Main App ----
+        function App() {
+            const [telemetry, setTelemetry] = useState({
+                battery: 100, steering_angle: 0, speed: 0, mode: 'CONNECTING...'
+            });
+            const [lidar, setLidar] = useState([]);
+            const [connected, setConnected] = useState(false);
+            const [fs, setFs] = useState(null);
+            const [rsView, setRsView] = useState('rgb');
+
+            // WebSocket connections
+            useEffect(() => {
+                const wsBase = `ws://${window.location.host}`;
+
+                function mkWs(path, onMsg) {
+                    let ws;
+                    function connect() {
+                        ws = new WebSocket(`${wsBase}${path}`);
+                        ws.onopen = () => setConnected(true);
+                        ws.onmessage = e => { try { onMsg(JSON.parse(e.data)); } catch {} };
+                        ws.onclose = () => { setConnected(false); setTimeout(connect, 2000); };
+                        ws.onerror = () => ws.close();
+                    }
+                    connect();
+                    return () => { if (ws) ws.close(); };
+                }
+
+                const c1 = mkWs('/api/ws/telemetry', setTelemetry);
+                const c2 = mkWs('/api/ws/lidar', setLidar);
+                return () => { c1(); c2(); };
+            }, []);
+
+            const modeClass = telemetry.mode === 'REAL' ? 'real' : 'simulation';
+            const rsLabel = (RS_VIEWS.find(v => v.value === rsView) || RS_VIEWS[0]).label;
+
+            return (
+                <div className="dash-root">
+
+                    {/* ---- Top Bar ---- */}
+                    <div className="top-bar">
+                        <div className="top-bar-left">
+                            <span className="ntt-logo">NTT</span>
+                            <span className="ntt-data">DATA</span>
+                        </div>
+                        <div className="top-bar-center">
+                            QCar 2 Dashboard
+                        </div>
+                        <div className="top-bar-right">
+                            <div className="top-bar-status">
+                                <div className={`status-dot ${connected ? 'on' : 'off'}`} />
+                                {connected ? 'Live · Hardware' : 'Connecting...'}
+                                <span className={`mode-pill ${modeClass}`}>{telemetry.mode}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ---- Dashboard Grid ---- */}
+                    <div className="dash-main">
+                        <div className="dash-grid">
+
+                            {/* RealSense */}
+                            <div className="card">
+                                <div className="card-hd">
+                                    <div>
+                                        <h3><span className="dot" /> RealSense Camera</h3>
+                                        <div className="sub">Live Feed · {rsLabel}</div>
+                                    </div>
+                                    <div className="card-acts">
+                                        <RsDropdown view={rsView} onChange={setRsView} />
+                                        <button className="expand-btn" onClick={() => setFs({
+                                            type: 'feed',
+                                            src: `/api/video/realsense?view=${rsView}`,
+                                            label: `RealSense · ${rsLabel}`
+                                        })}>&#x26F6;</button>
+                                    </div>
+                                </div>
+                                <div className="card-bd">
+                                    <img className="feed-img" src={`/api/video/realsense?view=${rsView}`} alt="RealSense" />
+                                    <span className="feed-badge">RealSense · {rsLabel}</span>
+                                    <div className="feed-rec" />
+                                </div>
+                            </div>
+
+                            {/* LiDAR */}
+                            <div className="card">
+                                <div className="card-hd">
+                                    <div>
+                                        <h3><span className="dot" /> LiDAR Scan</h3>
+                                        <div className="sub">360° Point Cloud · {lidar.length} pts</div>
+                                    </div>
+                                    <button className="expand-btn" onClick={() => setFs({
+                                        type: 'lidar', label: 'LiDAR · 360° Scan'
+                                    })}>&#x26F6;</button>
+                                </div>
+                                <div className="card-bd">
+                                    <LidarViz data={lidar} />
+                                </div>
+                            </div>
+
+                            {/* Telemetry */}
+                            <div className="card">
+                                <div className="card-hd">
+                                    <div>
+                                        <h3><span className="dot" /> Vehicle Telemetry</h3>
+                                        <div className="sub">Real-time State</div>
+                                    </div>
+                                    <span className={`mode-pill ${modeClass}`}>{telemetry.mode}</span>
+                                </div>
+                                <div className="card-bd">
+                                    <div className="tele-grid">
+                                        <div className="tele-box">
+                                            <div className="lbl">&#x1F50B; Battery</div>
+                                            <div className="val green">{telemetry.battery.toFixed(1)}%</div>
+                                            <div className="bar-track">
+                                                <div className="bar-fill green" style={{width: `${Math.max(0, telemetry.battery)}%`}} />
+                                            </div>
+                                        </div>
+                                        <div className="tele-box">
+                                            <div className="lbl">&#x1F3CE; Speed</div>
+                                            <div className="val blue">{telemetry.speed.toFixed(2)} <span style={{fontSize:'13px',color:'#888'}}>m/s</span></div>
+                                        </div>
+                                        <div className="tele-box">
+                                            <div className="lbl">&#x1F3AF; Steering</div>
+                                            <div className="val amber">{telemetry.steering_angle.toFixed(1)}°</div>
+                                        </div>
+                                        <div className="tele-box">
+                                            <div className="lbl">&#x2764; Health</div>
+                                            <div className="val cyan">STABLE</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* CSI Cameras */}
+                            <div className="card">
+                                <div className="card-hd">
+                                    <div>
+                                        <h3><span className="dot" /> CSI Camera Array</h3>
+                                        <div className="sub">4× Surround View</div>
+                                    </div>
+                                </div>
+                                <div className="card-bd">
+                                    <div className="csi-grid">
+                                        {CSI_CAMS.map(cam => (
+                                            <div key={cam.id} className="csi-cell"
+                                                 onDoubleClick={() => setFs({
+                                                     type: 'feed',
+                                                     src: `/api/video/csi/${cam.id}`,
+                                                     label: `${cam.label} CSI Camera`
+                                                 })}>
+                                                <img src={`/api/video/csi/${cam.id}`} alt={cam.label} />
+                                                <div className="csi-label">{cam.label}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    {/* Fullscreen */}
+                    {fs && (
+                        <FullScreenModal
+                            type={fs.type}
+                            src={fs.src}
+                            label={fs.label}
+                            lidarData={lidar}
+                            onClose={() => setFs(null)}
+                        />
+                    )}
+                </div>
+            );
+        }
+
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>

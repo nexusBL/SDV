@@ -1,0 +1,97 @@
+Here's the complete step-by-step guide to map your lab hall from scratch using the SLAM system:
+
+---
+
+## Step-by-Step: Mapping Your Lab Hall
+
+### 1. Hardware Setup
+```bash
+# Make sure the QCar is powered on, LiDAR is spinning, and gamepad is connected
+# Verify the gamepad device:
+ls -l /dev/input/by-id/ | grep Logitech
+```
+- Place the QCar at a **known starting position** (e.g., a corner or doorway — this becomes [(0, 0)](cci:1://file:///home/nvidia/Desktop/SDV_workspace/scripts/SLAM_1/path_planner.py:50:4-143:19) on the map).
+- Ensure the LiDAR has a clear line of sight (nothing blocking it on top of the car).
+- Turn on the gamepad and make sure it's paired.
+
+### 2. Navigate to the Project
+```bash
+cd /home/nvidia/Desktop/SDV_workspace/scripts/SLAM_1
+```
+
+### 3. Start Teleop Mapping
+```bash
+python3 autonomous_slam.py --mode teleop
+```
+
+### 4. Drive the Hall (Mapping Phase)
+| Control | Action |
+|---------|--------|
+| **RT (right trigger)** | Throttle — press gently for slow speed |
+| **Left stick** | Steer left/right |
+| **B button** | Quit and save |
+
+**Mapping tips for best results:**
+1. **Drive slowly** — the particle filter needs time to converge. Keep RT at ~30-50%.
+2. **Start with a small loop** — drive a rectangle near the start to give the filter a strong initial map.
+3. **Cover the entire hall systematically** — drive along each wall, then criss-cross the middle.
+4. **Revisit areas** — loop closure kicks in when you return to a previously-visited pose. Drive back to your starting point at least once.
+5. **Avoid sudden turns** — smooth steering gives better odometry estimates.
+6. **Watch the terminal output** — it prints the estimated position every 10 iterations. If the numbers look wildly wrong, slow down.
+
+### 5. Monitor Progress
+Map images are saved to the project folder every 50 iterations:
+```bash
+# In a second terminal, view the latest map:
+ls -t slam_map_*.jpg | head -1 | xargs eog   # or use: feh, display, etc.
+
+# Or copy to your laptop for viewing:
+scp nvidia@<QCAR_IP>:/home/nvidia/Desktop/SDV_workspace/scripts/SLAM_1/slam_map_*.jpg ~/Desktop/
+```
+
+### 6. Stop and Save
+- Press **B** on the gamepad, or **Ctrl+C** in the terminal.
+- The final map is automatically saved as **`slam_map_final.jpg`**.
+
+### 7. Verify the Map
+```bash
+# Check the final map exists
+ls -la slam_map_final.jpg
+
+# View it (if you have a display)
+eog slam_map_final.jpg
+```
+
+A good map will show:
+- **White areas** = free space (where you drove)
+- **Dark/black areas** = walls and obstacles
+- **Gray areas** = unexplored regions
+- **Green dots** = particle positions (should cluster together if filter converged)
+
+### 8. (Optional) Autonomous Navigation
+Once you have a good map, you can navigate autonomously to any point on it:
+```bash
+# Pick a goal from the map coordinates (visible in terminal output)
+# Example: navigate to grid position (20, 15)
+python3 autonomous_slam.py --mode autonomous --goal 20 15
+```
+
+Or do mapping + navigation in one run:
+```bash
+# Map for 60 seconds, then auto-navigate to goal
+python3 autonomous_slam.py --mode full --goal 20 15 --map-time 60
+```
+
+### 9. Troubleshooting
+
+| Problem | Fix |
+|---------|-----|
+| Car doesn't move | Check gamepad connection, verify `gpad = gamepadViaTarget(1)` — try changing `1` to `2` |
+| Map is very noisy | Drive slower, increase particles: `--particles 10` |
+| Position drifts badly | Revisit the starting area to trigger loop closure |
+| `slam_map_final.jpg` is tiny | You didn't drive enough — the map grows as you explore |
+| LiDAR error | Check USB connection, verify with `ls /dev/ttyUSB*` |
+
+---
+
+**Recommended first run:** Drive a slow figure-8 pattern in the hall for ~2 minutes, return to start, then press B. Check the saved map — if it looks reasonable, do a second longer run covering the full hall.

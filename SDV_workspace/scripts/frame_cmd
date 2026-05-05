@@ -1,0 +1,32 @@
+Commands —
+
+**Step 1 — Environment 
+source ~/.bashrc
+source ~/Desktop/SDV_workspace/install/setup.bash
+
+**Step 2 — RealSense camera start(Terminal 1):**
+```bash
+ros2 run qcar2_nodes rgbd
+```
+
+**Step 3 — Raw frame save (Terminal 2):**
+```bash
+python3 ~/Desktop/SDV_workspace/scripts/save_frame.py
+```
+
+**Step 4 — Perception node launch (Terminal 2):**
+```bash
+ros2 launch sdv_perception perception_launch.py
+```
+
+**Step 5 — Annotated frame save(Terminal 3):**
+```bash
+python3 ~/Desktop/SDV_workspace/scripts/save_annotated.py
+```
+
+**Step 6 — Files**
+```
+Raw frames:       ~/Desktop/SDV_workspace/scripts/frame_1.jpg
+Annotated frames: ~/Desktop/SDV_workspace/scripts/annotated_1.jpg
+ROI image:        ~/Desktop/SDV_workspace/scripts/roi.jpg
+Bird's eye:       ~/Desktop/SDV_workspace/scripts/birdseye.jpg

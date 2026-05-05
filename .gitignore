@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+
+# ROS2
+build/
+install/
+log/
+
+# Large files
+*.bag
+*.db3
+
+# Models
+*.pt
+*.pth
+
+# OS
+.vscode/
+.idea/
